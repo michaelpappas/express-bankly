@@ -1,10 +1,12 @@
 /** User related routes. */
+const jsonschema = require("jsonschema");
 
 const User = require("../models/user");
 const express = require("express");
 const router = new express.Router();
-const { UnauthorizedError } = require("../helpers/expressError");
-const { authUser, requireLogin, requireAdmin } = require("../middleware/auth");
+const { UnauthorizedError, NotFoundError } = require("../helpers/expressError");
+const { authUser, requireLogin, requireAdmin, requireOwnUserOrAdmin } = require("../middleware/auth");
+const userUpdateSchema = require("../schemas/userUpdate.json");
 
 /** GET /
  *
@@ -34,7 +36,10 @@ router.get("/:username", authUser, requireLogin, async function (
   res,
   next,
 ) {
-  let user = await User.get(req.params.username);
+  let username = req.params.username;
+
+  let user = await User.get(username);
+
   return res.json({ user });
 });
 
@@ -52,11 +57,13 @@ router.get("/:username", authUser, requireLogin, async function (
  * other fields (including non-existent ones), an error should be raised.
  */
 
-router.patch("/:username", authUser, requireLogin, requireAdmin, async function (
+// FIXES BUG #3 - removed requireAdmin middleware
+router.patch("/:username", authUser, requireLogin, async function (
   req,
   res,
   next,
 ) {
+
   if (!res.locals.isAdmin && res.locals.username !== req.params.username) {
     throw new UnauthorizedError("Only that user or admin can edit a user.");
   }
@@ -65,10 +72,22 @@ router.patch("/:username", authUser, requireLogin, requireAdmin, async function 
   let fields = { ...req.body };
   delete fields._token;
 
+  // FIXES BUG #1 - Begin
+  const validator = jsonschema.validate(
+    fields,
+    userUpdateSchema,
+    { required: true }
+  );
+
+  if (!validator.valid) {
+    const errs = validator.errors.map(e => e.stack);
+    throw new UnauthorizedError(errs);
+  }
+  // FIXES BUG #1 - End
+
   let user = await User.update(req.params.username, fields);
   return res.json({ user });
 }); // end
-
 /** DELETE /[username]
  *
  * Delete a user. Only a staff user should be able to use this.
@@ -88,4 +107,4 @@ router.delete("/:username", authUser, requireAdmin, async function (
   return res.json({ message: "deleted" });
 }); // end
 
-module.exports = router;
+module.exports = router;;

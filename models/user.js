@@ -10,12 +10,12 @@ const { BCRYPT_WORK_FACTOR } = require("../config");
 
 class User {
 
-/** Register user with data. Returns new user data. */
+  /** Register user with data. Returns new user data. */
 
-  static async register({username, password, first_name, last_name, email, phone}) {
+  static async register({ username, password, first_name, last_name, email, phone }) {
     const duplicateCheck = await db.query(
-      `SELECT username 
-        FROM users 
+      `SELECT username
+        FROM users
         WHERE username = $1`,
       [username]
     );
@@ -26,9 +26,9 @@ class User {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
 
     const result = await db.query(
-      `INSERT INTO users 
-          (username, password, first_name, last_name, email, phone) 
-        VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO users
+          (username, password, first_name, last_name, email, phone)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING username, password, first_name, last_name, email, phone`,
       [
         username,
@@ -59,7 +59,7 @@ class User {
                 email,
                 phone,
                 admin
-            FROM users 
+            FROM users
             WHERE username = $1`,
       [username]
     );
@@ -81,12 +81,11 @@ class User {
 
   static async getAll() {
     const result = await db.query(
-      `SELECT username,
-                first_name,
+      `SELECT first_name,
                 last_name,
                 email,
                 phone
-            FROM users 
+            FROM users
             ORDER BY username`
     );
     return result.rows;
@@ -111,9 +110,9 @@ class User {
     );
 
     const user = result.rows[0];
-
+    debugger;
     if (!user) {
-      new NotFoundError('No such user');
+      throw new NotFoundError('No such user'); // FIXES BUG #4 - throw missing
     }
 
     return user;
@@ -134,7 +133,7 @@ class User {
       'username',
       username
     );
-
+    debugger;
     const result = await db.query(query, values);
     const user = result.rows[0];
 

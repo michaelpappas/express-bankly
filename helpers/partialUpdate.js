@@ -21,7 +21,7 @@ function sqlForPartialUpdate(table, items, key, id) {
   // filter out keys that start with "_" -- we don't want these in DB
   for (let key in items) {
     if (key.startsWith("_")) {
-      delete items[key]
+      delete items[key];
     }
   }
 
@@ -29,15 +29,19 @@ function sqlForPartialUpdate(table, items, key, id) {
     columns.push(`${column}=$${idx}`);
     idx += 1;
   }
-
+  //BUG FIX #6 - it is unnecessary and potentially dangerous to return a password
+  //             changed RETURNing to include everything but the password.
   // build query
   let cols = columns.join(", ");
-  let query = `UPDATE ${table} SET ${cols} WHERE ${key}=$${idx} RETURNING *`;
+  let query = `UPDATE ${table}
+               SET ${cols}
+               WHERE ${key}=$${idx}
+               RETURNING username, first_name, last_name, email, phone, admin`;
 
   let values = Object.values(items);
   values.push(id);
 
-  return {query, values};
+  return { query, values };
 }
 
 

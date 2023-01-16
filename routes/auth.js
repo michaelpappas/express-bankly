@@ -38,9 +38,9 @@ router.post("/register", async function (req, res, next) {
  */
 
 router.post("/login", async function (req, res, next) {
-  console.log("login route");
   const { username, password } = req.body;
-  let user = User.authenticate(username, password);
+  let user = await User.authenticate(username, password); //BUG #5 no await so user.admin was undefined!
+
   const token = createTokenForUser(username, user.admin);
   return res.json({ token });
 }); // end

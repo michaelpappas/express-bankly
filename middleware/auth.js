@@ -6,6 +6,7 @@ const { SECRET_KEY } = require('../config');
 /** Authorization Middleware: Requires user is logged in. */
 
 function requireLogin(req, res, next) {
+  debugger;
   try {
     if (res.locals.username) {
       return next();
@@ -22,6 +23,21 @@ function requireLogin(req, res, next) {
 function requireAdmin(req, res, next) {
   try {
     if (res.locals.isAdmin) {
+      return next();
+    } else {
+      return next({ status: 401, message: 'Unauthorized' });
+    }
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Authorization Middleware: Requires user is admin or is own user. */
+
+function requireOwnUserOrAdmin(req, res, next) {
+  debugger;
+  try {
+    if (res.locals.isAdmin || res.locals.username == req.params.username) {
       return next();
     } else {
       return next({ status: 401, message: 'Unauthorized' });
@@ -53,6 +69,7 @@ function authUser(req, res, next) {
       let payload = jwt.decode(token);
       res.locals.username = payload.username;
       res.locals.isAdmin = payload.admin;
+      debugger;
     }
     return next();
   } catch (err) {
@@ -64,5 +81,6 @@ function authUser(req, res, next) {
 module.exports = {
   requireLogin,
   requireAdmin,
+  requireOwnUserOrAdmin,
   authUser
 };
